@@ -5,6 +5,8 @@ import {UserInputManager} from "../Phaser/UserInput/UserInputManager";
 import {VIDEO_QUALITY_SELECT} from "../Administration/ConsoleGlobalMessageManager";
 import {connectionManager} from "../Connexion/ConnectionManager";
 import {GameConnexionTypes} from "../Url/UrlManager";
+import {UserSimplePeerInterface} from "./SimplePeer";
+import {blackListManager} from "./BlackListManager";
 declare const navigator:any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 const localValueVideo = localStorage.getItem(VIDEO_QUALITY_SELECT);
@@ -473,8 +475,9 @@ export class MediaManager {
         return this.getCamera();
     }
 
-    addActiveVideo(userId: string, userName: string = "", anonymous: boolean = true){
+    addActiveVideo(user: UserSimplePeerInterface, userName: string = "", anonymous: boolean = true){
         this.webrtcInAudio.play();
+        const userId = ''+user.userId
 
         userName = userName.toUpperCase();
         const color = this.getColorByString(userName);
@@ -485,6 +488,7 @@ export class MediaManager {
                 <div class="rtc-error" style="display: none"></div>
                 <i id="name-${userId}" style="background-color: ${color};">${userName}</i>
                 <img id="microphone-${userId}" src="resources/logos/microphone-close.svg">
+                <img id="block-${userId}" class="block-button active" src="resources/logos/close.svg">
                 ` +
                 ((anonymous === false)?`
                     <button id="report-${userId}" class="report">
@@ -500,6 +504,19 @@ export class MediaManager {
 
         layoutManager.add(DivImportance.Normal, userId, html);
 
+        const blockBtn = HtmlUtils.getElementByIdOrFail<HTMLDivElement>(`block-${userId}`);
+        blockBtn.addEventListener('click', (e: MouseEvent) => {
+            e.preventDefault();
+            const toBeBlackListed = !blackListManager.isBlackListed(parseInt(userId));
+            toBeBlackListed ? blackListManager.blackList('', parseInt(userId)) : blackListManager.cancelBlackList(parseInt(userId));
+            const remoteVideo = this.remoteVideo.get(userId);
+            if (remoteVideo === undefined) {
+                throw `cannot block video for ${userId}`;
+            }
+            (remoteVideo.srcObject as unknown as MediaStream).getTracks().forEach((track) => {
+                track.enabled = !toBeBlackListed;
+            });
+        });
         this.remoteVideo.set(userId, HtmlUtils.getElementByIdOrFail<HTMLVideoElement>(userId));
 
         //permit to create participant in discussion part

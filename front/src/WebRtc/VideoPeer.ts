@@ -2,6 +2,7 @@ import * as SimplePeerNamespace from "simple-peer";
 import {mediaManager} from "./MediaManager";
 import {TURN_PASSWORD, TURN_SERVER, TURN_USER} from "../Enum/EnvironmentVariable";
 import {RoomConnection} from "../Connexion/RoomConnection";
+import {blackListManager} from "./BlackListManager";
 
 const Peer: SimplePeerNamespace.SimplePeer = require('simple-peer');
 
@@ -31,6 +32,7 @@ export class VideoPeer extends Peer {
                 ]
             }
         });
+        this.userId = userId;
 
         console.log('PEER SETUP ', {
             initiator: initiator ? initiator : false,
@@ -55,6 +57,12 @@ export class VideoPeer extends Peer {
         });
 
         this.on('stream', (stream: MediaStream) => {
+            if (blackListManager.isBlackListed(this.userId)) {
+                console.log('blocked user', this.userId)
+                stream.getTracks().forEach((track) => {
+                    track.enabled = false;
+                });
+            }
             this.stream(stream);
         });
 
@@ -81,8 +89,6 @@ export class VideoPeer extends Peer {
 
         this.on('data',  (chunk: Buffer) => {
             const message = JSON.parse(chunk.toString('utf8'));
-            console.log("data", message);
-
             if(message.type === MESSAGE_TYPE_CONSTRAINT) {
                 if (message.audio) {
                     mediaManager.enabledMicrophoneByUserId(this.userId);
@@ -95,8 +101,10 @@ export class VideoPeer extends Peer {
                 } else {
                     mediaManager.disabledVideoByUserId(this.userId);
                 }
-            } else if(message.type === 'message') {
-                mediaManager.addNewMessage(message.name, message.message);
+            } else if(message.type === MESSAGE_TYPE_MESSAGE) {
+                if (!blackListManager.isBlackListed(message.userId)) {
+                    mediaManager.addNewMessage(message.name, message.message);
+                }
             }
         });
 
@@ -123,10 +131,6 @@ export class VideoPeer extends Peer {
             mediaManager.addStreamRemoteVideo("" + this.userId, stream);
         }catch (err){
             console.error(err);
-            //Force add streem video
-            /*setTimeout(() => {
-                this.stream(stream);
-            }, 500);*/ //todo: find a way to prevent infinite regression.
         }
     }
 
