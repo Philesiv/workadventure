@@ -112,6 +112,7 @@ body .message-info.warning{
     cursor: url('/resources/logos/cursor_pointer.png'), pointer;
 }
 .video-container img.block-button{
+    display: block;
     right: 40px;
     left: auto;
 }

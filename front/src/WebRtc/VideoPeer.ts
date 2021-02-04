@@ -1,5 +1,5 @@
 import * as SimplePeerNamespace from "simple-peer";
-import {mediaManager} from "./MediaManager";
+import {MediaManager, mediaManager} from "./MediaManager";
 import {TURN_PASSWORD, TURN_SERVER, TURN_USER} from "../Enum/EnvironmentVariable";
 import {RoomConnection} from "../Connexion/RoomConnection";
 import {blackListManager} from "./BlackListManager";
@@ -34,40 +34,12 @@ export class VideoPeer extends Peer {
         });
         this.userId = userId;
 
-        console.log('PEER SETUP ', {
-            initiator: initiator ? initiator : false,
-            reconnectTimer: 10000,
-            config: {
-                iceServers: [
-                    {
-                        urls: 'stun:stun.l.google.com:19302'
-                    },
-                    {
-                        urls: TURN_SERVER.split(','),
-                        username: TURN_USER,
-                        credential: TURN_PASSWORD
-                    },
-                ]
-            }
-        });
-
         //start listen signal for the peer connection
         this.on('signal', (data: unknown) => {
             this.sendWebrtcSignal(data);
         });
 
-        this.on('stream', (stream: MediaStream) => {
-            if (blackListManager.isBlackListed(this.userId)) {
-                console.log('blocked user', this.userId)
-                stream.getTracks().forEach((track) => {
-                    track.enabled = false;
-                });
-            }
-            this.stream(stream);
-        });
-
-        /*peer.on('track', (track: MediaStreamTrack, stream: MediaStream) => {
-        });*/
+        this.on('stream', (stream: MediaStream) => this.stream(stream));
 
         this.on('close', () => {
             this._connected = false;
@@ -128,6 +100,9 @@ export class VideoPeer extends Peer {
      */
     private stream(stream: MediaStream) {
         try {
+            if (blackListManager.isBlackListed(this.userId)) {
+                MediaManager.muteStream(stream, false);
+            }
             mediaManager.addStreamRemoteVideo("" + this.userId, stream);
         }catch (err){
             console.error(err);

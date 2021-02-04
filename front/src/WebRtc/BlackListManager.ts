@@ -1,29 +1,25 @@
-
-interface blockedUser {
-    id: number;
-    name: string;
-}
+import {Subject} from 'rxjs';
 
 class BlackListManager {
-    private list: blockedUser[] = [];
-    
-    getList() {
-        return this.list;
-    }
+    private list: number[] = [];
+    public onBlockStream: Subject<number> = new Subject();
+    public onUnBlockStream: Subject<number> = new Subject();
     
     isBlackListed(userId: number) {
-        return this.list.find((data) => data.id === userId) !== undefined;
+        return this.list.find((data) => data === userId) !== undefined;
     }
     
     blackList(userName: string, userId: number): void {
         console.log('blackList', userId)
         if (this.isBlackListed(userId)) return;
-        this.list.push({id: userId, name: userName});
+        this.list.push(userId);
+        this.onBlockStream.next(userId);
     }
 
     cancelBlackList(userId: number): void {
         console.log('cancel blackList', userId)
-        this.list.splice(this.list.findIndex(data => data.id === userId), 1);
+        this.list.splice(this.list.findIndex(data => data === userId), 1);
+        this.onUnBlockStream.next(userId);
     }
 }
 
