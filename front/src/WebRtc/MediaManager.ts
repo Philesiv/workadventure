@@ -7,6 +7,7 @@ import {connectionManager} from "../Connexion/ConnectionManager";
 import {GameConnexionTypes} from "../Url/UrlManager";
 import {UserSimplePeerInterface} from "./SimplePeer";
 import {blackListManager} from "./BlackListManager";
+import {createOnBlockCallback, getBlockButtonHtml} from "./blockButton";
 declare const navigator:any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 const localValueVideo = localStorage.getItem(VIDEO_QUALITY_SELECT);
@@ -487,12 +488,13 @@ export class MediaManager {
                 <div class="connecting-spinner"></div>
                 <div class="rtc-error" style="display: none"></div>
                 <i id="name-${userId}" style="background-color: ${color};">${userName}</i>
-                <img id="microphone-${userId}" src="resources/logos/microphone-close.svg">
-                <img id="block-${userId}" class="block-button active" src="resources/logos/close.svg">
+                <img id="microphone-${userId}" title="mute" src="resources/logos/microphone-close.svg">
                 ` +
+                getBlockButtonHtml(userId)
+                +
                 ((anonymous === false)?`
                     <button id="report-${userId}" class="report">
-                        <img src="resources/logos/report.svg">
+                        <img title="report this user" src="resources/logos/report.svg">
                         <span>Report</span>
                     </button>
                 `:''
@@ -504,19 +506,7 @@ export class MediaManager {
 
         layoutManager.add(DivImportance.Normal, userId, html);
 
-        const blockBtn = HtmlUtils.getElementByIdOrFail<HTMLDivElement>(`block-${userId}`);
-        blockBtn.addEventListener('click', (e: MouseEvent) => {
-            e.preventDefault();
-            const toBeBlackListed = !blackListManager.isBlackListed(parseInt(userId));
-            toBeBlackListed ? blackListManager.blackList('', parseInt(userId)) : blackListManager.cancelBlackList(parseInt(userId));
-            const remoteVideo = this.remoteVideo.get(userId);
-            if (remoteVideo === undefined) {
-                throw `cannot block video for ${userId}`;
-            }
-            (remoteVideo.srcObject as unknown as MediaStream).getTracks().forEach((track) => {
-                track.enabled = !toBeBlackListed;
-            });
-        });
+        createOnBlockCallback(userId, this.remoteVideo.get(userId) as HTMLVideoElement)
         this.remoteVideo.set(userId, HtmlUtils.getElementByIdOrFail<HTMLVideoElement>(userId));
 
         //permit to create participant in discussion part
