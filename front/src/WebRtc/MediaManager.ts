@@ -29,7 +29,6 @@ export type ReportCallback = (message: string) => void;
 export type ShowReportCallBack = (userId: string, userName: string|undefined) => void;
 
 // TODO: Split MediaManager in 2 classes: MediaManagerUI (in charge of HTML) and MediaManager (singleton in charge of the camera only)
-// TODO: verify that microphone event listeners are not triggered plenty of time NOW (since MediaManager is created many times!!!!)
 export class MediaManager {
     localStream: MediaStream|null = null;
     localScreenCapture: MediaStream|null = null;
@@ -123,27 +122,6 @@ export class MediaManager {
         this.pingCameraStatus();
 
         this.checkActiveUser(); //todo: desactivated in case of bug
-
-        blackListManager.onBlockStream.subscribe((userId) => {
-            this.muteVideoStreams(userId, false);
-        });
-        blackListManager.onUnBlockStream.subscribe((userId) => {
-            this.muteVideoStreams(userId, true);
-        });
-    }
-
-    private muteVideoStreams(userId: number, enable: boolean) {
-        this.remoteVideo.forEach((videoEl, userIdKey) => {
-            if (userIdKey === ''+userId || userIdKey === this.getScreenSharingId(''+userId)) {
-                MediaManager.muteStream(videoEl.srcObject as MediaStream, enable);
-            }
-        })
-    }
-
-    public static muteStream(stream: MediaStream, enable: boolean) {
-        stream.getTracks().forEach((track) => {
-            track.enabled = enable;
-        });
     }
 
     public setLastUpdateScene(){

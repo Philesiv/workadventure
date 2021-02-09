@@ -3,19 +3,29 @@ import {MediaManager, mediaManager} from "./MediaManager";
 import {TURN_PASSWORD, TURN_SERVER, TURN_USER} from "../Enum/EnvironmentVariable";
 import {RoomConnection} from "../Connexion/RoomConnection";
 import {blackListManager} from "./BlackListManager";
+import {Subscription} from "rxjs";
+import {UserSimplePeerInterface} from "./SimplePeer";
 
 const Peer: SimplePeerNamespace.SimplePeer = require('simple-peer');
 
 export const MESSAGE_TYPE_CONSTRAINT = 'constraint';
 export const MESSAGE_TYPE_MESSAGE = 'message';
+export const MESSAGE_TYPE_BLOCKED = 'blocked';
+export const MESSAGE_TYPE_UNBLOCKED = 'unblocked';
 /**
  * A peer connection used to transmit video / audio signals between 2 peers.
  */
 export class VideoPeer extends Peer {
     public toClose: boolean = false;
     public _connected: boolean = false;
+    public remoteStream!: MediaStream;
+    private blocked: boolean = false;
+    private userId: number;
+    private userName: string;
+    private onBlockSubscribe: Subscription;
+    private onUnBlockSubscribe: Subscription;
 
-    constructor(public userId: number, initiator: boolean, private connection: RoomConnection) {
+    constructor(public user: UserSimplePeerInterface, initiator: boolean, private connection: RoomConnection) {
         super({
             initiator: initiator ? initiator : false,
             reconnectTimer: 10000,
@@ -32,7 +42,8 @@ export class VideoPeer extends Peer {
                 ]
             }
         });
-        this.userId = userId;
+        this.userId = user.userId;
+        this.userName = user.name || '';
 
         //start listen signal for the peer connection
         this.on('signal', (data: unknown) => {
@@ -50,7 +61,7 @@ export class VideoPeer extends Peer {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.on('error', (err: any) => {
             console.error(`error => ${this.userId} => ${err.code}`, err);
-            mediaManager.isError("" + userId);
+            mediaManager.isError("" + this.userId);
         });
 
         this.on('connect', () => {
@@ -77,6 +88,15 @@ export class VideoPeer extends Peer {
                 if (!blackListManager.isBlackListed(message.userId)) {
                     mediaManager.addNewMessage(message.name, message.message);
                 }
+            } else if(message.type === MESSAGE_TYPE_BLOCKED) {
+                //FIXME when A blacklists B, the output stream from A is muted in B's js client. This is insecure since B can manipulate the code to unmute A stream. 
+                // Find a way to block A's output stream in A's js client
+                //However, the output stream stream B is correctly blocked in A client
+                this.blocked = true;
+                this.muteStream(this.remoteStream, false);
+            } else if(message.type === MESSAGE_TYPE_UNBLOCKED) {
+                this.blocked = false;
+                this.muteStream(this.remoteStream, true);
             }
         });
 
@@ -85,6 +105,32 @@ export class VideoPeer extends Peer {
         });
 
         this.pushVideoToRemoteUser();
+        this.onBlockSubscribe = blackListManager.onBlockStream.subscribe((userId) => {
+            if (userId === this.userId) {
+                this.remoteStream.getTracks().forEach(track => track.enabled = false);
+                this.sendBlockMessage(true);
+            }
+        });
+        this.onUnBlockSubscribe = blackListManager.onUnBlockStream.subscribe((userId) => {
+            if (userId === this.userId) {
+                this.remoteStream.getTracks().forEach(track => track.enabled = true);
+                this.sendBlockMessage(false);
+            }
+        });
+        
+        if (blackListManager.isBlackListed(this.userId)) {
+            this.sendBlockMessage(true)
+        }
+    }
+
+    private sendBlockMessage(blocking: boolean) {
+        this.write(new Buffer(JSON.stringify({type: blocking ? MESSAGE_TYPE_BLOCKED : MESSAGE_TYPE_UNBLOCKED, name: this.userName.toUpperCase(), userId: this.userId, message: ''})));
+    }
+
+    private muteStream(stream: MediaStream, enable: boolean) {
+        stream.getTracks().forEach((track) => {
+            track.enabled = enable;
+        });
     }
 
     private sendWebrtcSignal(data: unknown) {
@@ -100,8 +146,9 @@ export class VideoPeer extends Peer {
      */
     private stream(stream: MediaStream) {
         try {
-            if (blackListManager.isBlackListed(this.userId)) {
-                MediaManager.muteStream(stream, false);
+            this.remoteStream = stream;
+            if (blackListManager.isBlackListed(this.userId) || this.blocked) {
+                this.muteStream(stream, false);
             }
             mediaManager.addStreamRemoteVideo("" + this.userId, stream);
         }catch (err){
@@ -118,6 +165,8 @@ export class VideoPeer extends Peer {
             if(!this.toClose){
                 return;
             }
+            this.onBlockSubscribe.unsubscribe();
+            this.onUnBlockSubscribe.unsubscribe();
             mediaManager.removeActiveVideo("" + this.userId);
             // FIXME: I don't understand why "Closing connection with" message is displayed TWICE before "Nb users in peerConnectionArray"
             // I do understand the method closeConnection is called twice, but I don't understand how they manage to run in parallel.

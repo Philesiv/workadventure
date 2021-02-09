@@ -9,7 +9,7 @@ import {
     UpdatedLocalStreamCallback
 } from "./MediaManager";
 import {ScreenSharingPeer} from "./ScreenSharingPeer";
-import {MESSAGE_TYPE_CONSTRAINT, MESSAGE_TYPE_MESSAGE, VideoPeer} from "./VideoPeer";
+import {MESSAGE_TYPE_BLOCKED, MESSAGE_TYPE_CONSTRAINT, MESSAGE_TYPE_MESSAGE, VideoPeer} from "./VideoPeer";
 import {RoomConnection} from "../Connexion/RoomConnection";
 import {connectionManager} from "../Connexion/ConnectionManager";
 import {GameConnexionTypes} from "../Url/UrlManager";
@@ -39,7 +39,7 @@ export class SimplePeer {
     private readonly sendLocalScreenSharingStreamCallback: StartScreenSharingCallback;
     private readonly stopLocalScreenSharingStreamCallback: StopScreenSharingCallback;
     private readonly peerConnectionListeners: Array<PeerConnectionListener> = new Array<PeerConnectionListener>();
-    private readonly userId: Number;
+    private readonly userId: number;
 
     constructor(private Connection: RoomConnection, private enableReporting: boolean, private myName: string) {
         // We need to go through this weird bound function pointer in order to be able to "free" this reference later.
@@ -140,7 +140,7 @@ export class SimplePeer {
 
         mediaManager.addActiveVideo(user, name, connectionManager.getConnexionType === GameConnexionTypes.anonymous);
 
-        const peer = new VideoPeer(user.userId, user.initiator ? user.initiator : false, this.Connection);
+        const peer = new VideoPeer(user, user.initiator ? user.initiator : false, this.Connection);
 
         //permit to send message
         mediaManager.addSendMessageCallback(user.userId,(message: string) => {

@@ -10,14 +10,12 @@ class BlackListManager {
     }
     
     blackList(userName: string, userId: number): void {
-        console.log('blackList', userId)
         if (this.isBlackListed(userId)) return;
         this.list.push(userId);
         this.onBlockStream.next(userId);
     }
 
     cancelBlackList(userId: number): void {
-        console.log('cancel blackList', userId)
         this.list.splice(this.list.findIndex(data => data === userId), 1);
         this.onUnBlockStream.next(userId);
     }
