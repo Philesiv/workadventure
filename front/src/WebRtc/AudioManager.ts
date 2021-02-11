@@ -17,16 +17,24 @@ class AudioManager {
     private audioPlayerDiv: HTMLDivElement;
     private audioPlayerCtrl: HTMLDivElement;
     private audioPlayerElem: HTMLAudioElement | undefined;
+    
 
     private volume = 1;
     private muted = false;
     private decreaseWhileTalking = true;
     private volumeReduced = false;
+    // low pass: 
+    private AudioContext = window.AudioContext; // -> for older browsers || window.webkitAudioContext;
+    private audioContext: AudioContext;
+    private sourceNode: MediaElementAudioSourceNode | undefined;
+    private filterNode: BiquadFilterNode | undefined;
+
 
     constructor() {
         this.audioPlayerDiv = HtmlUtils.getElementByIdOrFail<HTMLDivElement>(audioPlayerDivId);
         this.audioPlayerCtrl = HtmlUtils.getElementByIdOrFail<HTMLDivElement>(audioPlayerCtrlId);
-
+        this.audioContext = new AudioContext();
+        
         const storedVolume = localStorage.getItem('volume')
         if (storedVolume === null) {
             this.setVolume(1);
@@ -85,13 +93,14 @@ class AudioManager {
         this.audioPlayerElem.id = 'audioplayerelem';
         this.audioPlayerElem.controls = false;
         this.audioPlayerElem.preload = 'none';
+        this.audioPlayerElem.crossOrigin = 'anonymous' //to bypass cors (for now)
 
         const srcElem = document.createElement('source');
         srcElem.type = "audio/mp3";
         srcElem.src = url;
 
         this.audioPlayerElem.append(srcElem);
-
+        
         this.audioPlayerDiv.append(this.audioPlayerElem);
         this.changeVolume();
         this.audioPlayerElem.play();
@@ -131,11 +140,59 @@ class AudioManager {
         }
     }
 
+    public lowPassFilter(active: boolean): void {
+        if(active){
+            console.log("Filter active!");
+            if(this.opened === audioStates.playing){
+                // ToDo: check which really needed...
+                /*
+                
+                var convolverNode;
+                var panNode;
+                var gainNode;
+                var filterNode;
+                */
+                
+                
+                if(this.sourceNode === undefined){
+                    this.audioContext = new AudioContext();
+                    this.sourceNode = this.audioContext.createMediaElementSource(<HTMLAudioElement> this.audioPlayerElem );
+                    this.filterNode = this.audioContext.createBiquadFilter();
+                                        
+    
+                    this.sourceNode.connect( this.filterNode );
+
+                    this.filterNode.connect( this.audioContext.destination );
+                    //panNode.connect( this.audioContext.destination );
+                
+                }
+                if(this.filterNode !== undefined){
+                    this.filterNode.type = "lowpass";
+                    this.filterNode.frequency.value = 500; 
+                    this.filterNode.Q.value = 1.0;
+                }
+
+            }
+        }else{
+            console.log("Filter inactive :(");
+            if (this.filterNode !== undefined){
+                //this.audioContext.close();
+                this.filterNode.frequency.value = 20000; 
+            }
+        }
+
+        //const AudioContext = window.AudioContext || window.webkitAudioContext;
+    }
+
     public unloadAudio(): void {
         try {
             const audioElem = HtmlUtils.getElementByIdOrFail<HTMLAudioElement>('audioplayerelem');
             this.volume = audioElem.volume;
             this.muted = audioElem.muted;
+            // lowpass unload:
+            this.audioContext.close();
+            this.sourceNode?.disconnect;
+            this.sourceNode = undefined;
             audioElem.pause();
             audioElem.loop = false;
             audioElem.src = "";

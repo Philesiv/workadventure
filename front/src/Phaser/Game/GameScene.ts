@@ -622,13 +622,20 @@ export class GameScene extends ResizableScene implements CenterListener {
                 const mapDirUrl = this.MapUrlFile.substr(0, this.MapUrlFile.lastIndexOf('/'));
                 realAudioPath = mapDirUrl + '/' + url;
             }
-
+            
             audioManager.loadAudio(realAudioPath);
 
             if (loop) {
                 audioManager.loop();
             }
         }
+    }
+
+    private lowPassFilter(active: boolean|undefined): void {
+        if(active === undefined){
+            active = false;
+        }
+        audioManager.lowPassFilter(active);
     }
 
     private triggerOnMapLayerPropertyChange(){
@@ -699,6 +706,10 @@ export class GameScene extends ResizableScene implements CenterListener {
             this.playAudio(newValue, true);
         });
 
+        this.gameMap.onPropertyChange('lowPassFilter', (newValue, oldValue) => {
+            console.log(typeof(newValue));
+            this.lowPassFilter(newValue as boolean|undefined);
+        });
     }
 
     private onMapExit(exitKey: string) {
@@ -1203,7 +1214,7 @@ export class GameScene extends ResizableScene implements CenterListener {
         this.presentationModeSprite.setY(this.game.renderer.height - 2);
         this.chatModeSprite.setY(this.game.renderer.height - 2);
         this.openChatIcon.setY(this.game.renderer.height - 2);
-
+        
         // Recompute camera offset if needed
         this.updateCameraOffset();
     }
