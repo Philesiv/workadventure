@@ -631,11 +631,16 @@ export class GameScene extends ResizableScene implements CenterListener {
         }
     }
 
-    private lowPassFilter(active: boolean|undefined): void {
-        if(active === undefined){
-            active = false;
+    private lowPassFilter(value: number|undefined): void {
+        audioManager.lowPassFilter(value);
+    }
+
+    private gain(value: number|undefined): void {
+        if (value !== undefined){
+            value = value / 100; // to get percent
         }
-        audioManager.lowPassFilter(active);
+         
+        audioManager.gain(value);
     }
 
     private triggerOnMapLayerPropertyChange(){
@@ -707,8 +712,23 @@ export class GameScene extends ResizableScene implements CenterListener {
         });
 
         this.gameMap.onPropertyChange('lowPassFilter', (newValue, oldValue) => {
-            console.log(typeof(newValue));
-            this.lowPassFilter(newValue as boolean|undefined);
+            console.log(newValue + typeof(newValue));
+            if (Number.isInteger(newValue)) {
+                this.lowPassFilter(newValue as number);
+            }else{
+                this.lowPassFilter(undefined)
+            }
+            
+        });
+
+        this.gameMap.onPropertyChange('volume', (newValue, oldValue) => {
+            console.log(newValue + typeof(newValue));
+            if (Number.isInteger(newValue)) {
+                this.gain(newValue as number);
+            }else{
+                this.gain(undefined)
+            }
+            
         });
     }
 

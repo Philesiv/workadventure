@@ -28,7 +28,7 @@ class AudioManager {
     private audioContext: AudioContext;
     private sourceNode: MediaElementAudioSourceNode | undefined;
     private filterNode: BiquadFilterNode | undefined;
-
+    private gainNode: GainNode | undefined;
 
     constructor() {
         this.audioPlayerDiv = HtmlUtils.getElementByIdOrFail<HTMLDivElement>(audioPlayerDivId);
@@ -103,6 +103,17 @@ class AudioManager {
         
         this.audioPlayerDiv.append(this.audioPlayerElem);
         this.changeVolume();
+
+        // filter:
+        this.sourceNode = this.audioContext.createMediaElementSource(<HTMLAudioElement> this.audioPlayerElem );
+        this.filterNode = this.audioContext.createBiquadFilter();
+        this.gainNode = this.audioContext.createGain();
+        this.sourceNode.connect( this.gainNode );
+        this.gainNode.connect(this.filterNode);
+        this.filterNode.connect( this.audioContext.destination );
+        this.filterNode.frequency.value = 20000; 
+        this.gainNode.gain.value = 1;
+        this.audioContext.resume(); // to allow audiocontext in chrome
         this.audioPlayerElem.play();
 
         const muteElem = HtmlUtils.getElementByIdOrFail<HTMLInputElement>('audioplayer_mute');
@@ -140,49 +151,40 @@ class AudioManager {
         }
     }
 
-    public lowPassFilter(active: boolean): void {
-        if(active){
+    public lowPassFilter(value: number|undefined): void {
+        if(value !== undefined){
             console.log("Filter active!");
             if(this.opened === audioStates.playing){
-                // ToDo: check which really needed...
-                /*
-                
-                var convolverNode;
-                var panNode;
-                var gainNode;
-                var filterNode;
-                */
-                
-                
-                if(this.sourceNode === undefined){
-                    this.audioContext = new AudioContext();
-                    this.sourceNode = this.audioContext.createMediaElementSource(<HTMLAudioElement> this.audioPlayerElem );
-                    this.filterNode = this.audioContext.createBiquadFilter();
-                                        
-    
-                    this.sourceNode.connect( this.filterNode );
-
-                    this.filterNode.connect( this.audioContext.destination );
-                    //panNode.connect( this.audioContext.destination );
-                
-                }
                 if(this.filterNode !== undefined){
                     this.filterNode.type = "lowpass";
-                    this.filterNode.frequency.value = 500; 
+                    this.filterNode.frequency.value = value; 
                     this.filterNode.Q.value = 1.0;
                 }
-
             }
         }else{
             console.log("Filter inactive :(");
             if (this.filterNode !== undefined){
-                //this.audioContext.close();
                 this.filterNode.frequency.value = 20000; 
             }
         }
-
-        //const AudioContext = window.AudioContext || window.webkitAudioContext;
     }
+
+    public gain(value: number|undefined): void {
+        if(value !== undefined){
+            console.log("Gain active!");
+            if(this.opened === audioStates.playing){
+                if(this.gainNode !== undefined){
+                    this.gainNode.gain.value = value; 
+                    console.log(this.gainNode.gain.value)
+                }
+            }
+        }else{
+            console.log("gain inactive :(");
+            if (this.gainNode !== undefined){
+                this.gainNode.gain.value = 1; 
+            }
+        }
+    }    
 
     public unloadAudio(): void {
         try {
@@ -190,8 +192,9 @@ class AudioManager {
             this.volume = audioElem.volume;
             this.muted = audioElem.muted;
             // lowpass unload:
-            this.audioContext.close();
-            this.sourceNode?.disconnect;
+            //this.audioContext.close();
+            //this.sourceNode?.disconnect;
+            //
             this.sourceNode = undefined;
             audioElem.pause();
             audioElem.loop = false;
