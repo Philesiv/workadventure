@@ -17,16 +17,24 @@ class AudioManager {
     private audioPlayerDiv: HTMLDivElement;
     private audioPlayerCtrl: HTMLDivElement;
     private audioPlayerElem: HTMLAudioElement | undefined;
+    
 
     private volume = 1;
     private muted = false;
     private decreaseWhileTalking = true;
     private volumeReduced = false;
+    // low pass: 
+    private AudioContext = window.AudioContext; // -> for older browsers || window.webkitAudioContext;
+    private audioContext: AudioContext;
+    private sourceNode: MediaElementAudioSourceNode | undefined;
+    private filterNode: BiquadFilterNode | undefined;
+    private gainNode: GainNode | undefined;
 
     constructor() {
         this.audioPlayerDiv = HtmlUtils.getElementByIdOrFail<HTMLDivElement>(audioPlayerDivId);
         this.audioPlayerCtrl = HtmlUtils.getElementByIdOrFail<HTMLDivElement>(audioPlayerCtrlId);
-
+        this.audioContext = new AudioContext();
+        
         const storedVolume = localStorage.getItem('volume')
         if (storedVolume === null) {
             this.setVolume(1);
@@ -85,15 +93,27 @@ class AudioManager {
         this.audioPlayerElem.id = 'audioplayerelem';
         this.audioPlayerElem.controls = false;
         this.audioPlayerElem.preload = 'none';
+        this.audioPlayerElem.crossOrigin = 'anonymous' //to bypass cors (for now)
 
         const srcElem = document.createElement('source');
         srcElem.type = "audio/mp3";
         srcElem.src = url;
 
         this.audioPlayerElem.append(srcElem);
-
+        
         this.audioPlayerDiv.append(this.audioPlayerElem);
         this.changeVolume();
+
+        // filter:
+        this.sourceNode = this.audioContext.createMediaElementSource(<HTMLAudioElement> this.audioPlayerElem );
+        this.filterNode = this.audioContext.createBiquadFilter();
+        this.gainNode = this.audioContext.createGain();
+        this.sourceNode.connect( this.gainNode );
+        this.gainNode.connect(this.filterNode);
+        this.filterNode.connect( this.audioContext.destination );
+        this.filterNode.frequency.value = 20000; 
+        this.gainNode.gain.value = 1;
+        this.audioContext.resume(); // to allow audiocontext in chrome
         this.audioPlayerElem.play();
 
         const muteElem = HtmlUtils.getElementByIdOrFail<HTMLInputElement>('audioplayer_mute');
@@ -131,11 +151,51 @@ class AudioManager {
         }
     }
 
+    public lowPassFilter(value: number|undefined): void {
+        if(value !== undefined){
+            console.log("Filter active!");
+            if(this.opened === audioStates.playing){
+                if(this.filterNode !== undefined){
+                    this.filterNode.type = "lowpass";
+                    this.filterNode.frequency.value = value; 
+                    this.filterNode.Q.value = 1.0;
+                }
+            }
+        }else{
+            console.log("Filter inactive :(");
+            if (this.filterNode !== undefined){
+                this.filterNode.frequency.value = 20000; 
+            }
+        }
+    }
+
+    public gain(value: number|undefined): void {
+        if(value !== undefined){
+            console.log("Gain active!");
+            if(this.opened === audioStates.playing){
+                if(this.gainNode !== undefined){
+                    this.gainNode.gain.value = value; 
+                    console.log(this.gainNode.gain.value)
+                }
+            }
+        }else{
+            console.log("gain inactive :(");
+            if (this.gainNode !== undefined){
+                this.gainNode.gain.value = 1; 
+            }
+        }
+    }    
+
     public unloadAudio(): void {
         try {
             const audioElem = HtmlUtils.getElementByIdOrFail<HTMLAudioElement>('audioplayerelem');
             this.volume = audioElem.volume;
             this.muted = audioElem.muted;
+            // lowpass unload:
+            //this.audioContext.close();
+            //this.sourceNode?.disconnect;
+            //
+            this.sourceNode = undefined;
             audioElem.pause();
             audioElem.loop = false;
             audioElem.src = "";
