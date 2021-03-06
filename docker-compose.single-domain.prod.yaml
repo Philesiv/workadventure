@@ -26,9 +26,11 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./acme.json:/acme.json
+    restart: unless-stopped
 
   front:
-    image: thecodingmachine/nodejs:14
+    build:
+      dockerfile: front/Dockerfile
     environment:
       DEBUG_MODE: "$DEBUG_MODE"
       JITSI_URL: $JITSI_URL
@@ -57,10 +59,12 @@ services:
       - "traefik.http.routers.front-ssl.tls=true"
       - "traefik.http.routers.front-ssl.service=front"
       - "traefik.http.routers.front-ssl.tls.certresolver=myresolver"
+    restart: unless-stopped
 
   pusher:
-    image: thecodingmachine/nodejs:12
-    command: yarn dev
+    build:
+      dockerfile: pusher/Dockerfile
+    command: yarn run runprod
     #command: yarn run prod
     #command: yarn run profile
     environment:
@@ -86,9 +90,11 @@ services:
       - "traefik.http.routers.pusher-ssl.tls=true"
       - "traefik.http.routers.pusher-ssl.service=pusher"
       - "traefik.http.routers.pusher-ssl.tls.certresolver=myresolver"
+    restart: unless-stopped
 
   maps:
-    image: thecodingmachine/nodejs:12-apache
+    build:
+      dockerfile: maps/Dockerfile
     environment:
       DEBUG_MODE: "$DEBUG_MODE"
       HOST: "0.0.0.0"
@@ -98,7 +104,7 @@ services:
       #APACHE_EXTENSION_HEADERS: 1
       STARTUP_COMMAND_0: sudo a2enmod headers
       STARTUP_COMMAND_1: yarn install
-      STARTUP_COMMAND_2: yarn run dev &
+      STARTUP_COMMAND_2: yarn run runprod &
     volumes:
       - ./maps:/var/www/html
     labels:
@@ -115,8 +121,9 @@ services:
       - "traefik.http.routers.maps-ssl.tls.certresolver=myresolver"
 
   back:
-    image: thecodingmachine/nodejs:12
-    command: yarn dev
+    build:
+      dockerfile: back/Dockerfile
+    command: yarn run runprod
     #command: yarn run profile
     environment:
       DEBUG: "*"
@@ -141,6 +148,7 @@ services:
       - "traefik.http.routers.back-ssl.tls=true"
       - "traefik.http.routers.back-ssl.service=back"
       - "traefik.http.routers.back-ssl.tls.certresolver=myresolver"
+    restart: unless-stopped
 
   uploader:
     image: thecodingmachine/nodejs:12
