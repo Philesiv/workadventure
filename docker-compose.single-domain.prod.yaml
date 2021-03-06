@@ -48,7 +48,7 @@ services:
       TURN_USER: workadventure
       TURN_PASSWORD: WorkAdventure123
       START_ROOM_URL: "$START_ROOM_URL"
-    command: yarn run runprod
+    command: yarn run prod
     #volumes:
     #  - ./front:/usr/src/app
     labels:
