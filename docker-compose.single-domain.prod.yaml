@@ -48,8 +48,8 @@ services:
       TURN_PASSWORD: WorkAdventure123
       START_ROOM_URL: "$START_ROOM_URL"
     command: yarn run start
-    volumes:
-      - ./front:/usr/src/app
+    #volumes:
+    #  - ./front:/usr/src/app
     labels:
       - "traefik.http.routers.front.rule=Host(`${DOMAIN}`) && PathPrefix(`/`)"
       - "traefik.http.routers.front.entryPoints=web,traefik"
@@ -76,8 +76,8 @@ services:
       API_URL: back:50051
       JITSI_URL: $JITSI_URL
       JITSI_ISS: $JITSI_ISS
-    volumes:
-      - ./pusher:/usr/src/app
+    #volumes:
+    #  - ./pusher:/usr/src/app
     labels:
       - "traefik.http.middlewares.strip-pusher-prefix.stripprefix.prefixes=/pusher"
       - "traefik.http.routers.pusher.rule=Host(`${DOMAIN}`) && PathPrefix(`/pusher`)"
@@ -105,8 +105,8 @@ services:
       STARTUP_COMMAND_0: sudo a2enmod headers
       STARTUP_COMMAND_1: yarn install
       STARTUP_COMMAND_2: yarn run runprod &
-    volumes:
-      - ./maps:/var/www/html
+    #volumes:
+    #  - ./maps:/var/www/html
     labels:
       - "traefik.http.middlewares.strip-maps-prefix.stripprefix.prefixes=/maps"
       - "traefik.http.routers.maps.rule=Host(`${DOMAIN}`) && PathPrefix(`/maps`)"
@@ -134,8 +134,8 @@ services:
       ADMIN_API_TOKEN: "$ADMIN_API_TOKEN"
       JITSI_URL: $JITSI_URL
       JITSI_ISS: $JITSI_ISS
-    volumes:
-      - ./back:/usr/src/app
+    #volumes:
+    #  - ./back:/usr/src/app
     labels:
       - "traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes=/api"
       - "traefik.http.routers.back.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
