@@ -48,7 +48,7 @@ services:
       TURN_USER: workadventure
       TURN_PASSWORD: WorkAdventure123
       START_ROOM_URL: "$START_ROOM_URL"
-    command: yarn run prod
+    command: yarn run start
     #volumes:
     #  - ./front:/usr/src/app
     labels:
@@ -122,6 +122,7 @@ services:
       - "traefik.http.routers.maps-ssl.tls=true"
       - "traefik.http.routers.maps-ssl.service=maps"
       - "traefik.http.routers.maps-ssl.tls.certresolver=myresolver"
+    restart: unless-stopped
 
   back:
     build:
@@ -154,37 +155,39 @@ services:
       - "traefik.http.routers.back-ssl.tls.certresolver=myresolver"
     restart: unless-stopped
 
-  uploader:
-    image: thecodingmachine/nodejs:12
-    command: yarn dev
-    #command: yarn run profile
-    environment:
-      DEBUG: "*"
-      STARTUP_COMMAND_1: yarn install
-    volumes:
-      - ./uploader:/usr/src/app
-    labels:
-      - "traefik.http.middlewares.strip-uploader-prefix.stripprefix.prefixes=/uploader"
-      - "traefik.http.routers.uploader.rule=Host(`${DOMAIN}`) && PathPrefix(`/uploader`)"
-      - "traefik.http.routers.uploader.middlewares=strip-uploader-prefix@docker"
-      - "traefik.http.routers.uploader.entryPoints=web"
-      - "traefik.http.services.uploader.loadbalancer.server.port=8080"
-      - "traefik.http.routers.uploader-ssl.rule=Host(`${DOMAIN}`) && PathPrefix(`/uploader`)"
-      - "traefik.http.routers.uploader-ssl.middlewares=strip-uploader-prefix@docker"
-      - "traefik.http.routers.uploader-ssl.entryPoints=websecure"
-      - "traefik.http.routers.uploader-ssl.tls=true"
-      - "traefik.http.routers.uploader-ssl.service=uploader"
-      - "traefik.http.routers.uploader-ssl.tls.certresolver=myresolver"
+  #uploader:
+  #  image: thecodingmachine/nodejs:12
+  #  command: yarn dev
+  #  #command: yarn run profile
+  #  environment:
+  #    DEBUG: "*"
+  #    STARTUP_COMMAND_1: yarn install
+  #  volumes:
+  #    - ./uploader:/usr/src/app
+  #  labels:
+  #    - "traefik.http.middlewares.strip-uploader-prefix.stripprefix.prefixes=/uploader"
+  #    - "traefik.http.routers.uploader.rule=Host(`${DOMAIN}`) && PathPrefix(`/uploader`)"
+  #    - "traefik.http.routers.uploader.middlewares=strip-uploader-prefix@docker"
+  #    - "traefik.http.routers.uploader.entryPoints=web"
+  #    - "traefik.http.services.uploader.loadbalancer.server.port=8080"
+  #    - "traefik.http.routers.uploader-ssl.rule=Host(`${DOMAIN}`) && PathPrefix(`/uploader`)"
+  #    - "traefik.http.routers.uploader-ssl.middlewares=strip-uploader-prefix@docker"
+  #    - "traefik.http.routers.uploader-ssl.entryPoints=websecure"
+  #    - "traefik.http.routers.uploader-ssl.tls=true"
+  #    - "traefik.http.routers.uploader-ssl.service=uploader"
+  #    - "traefik.http.routers.uploader-ssl.tls.certresolver=myresolver"
+  #  restart: unless-stopped
 
-  messages:
-    #image: thecodingmachine/nodejs:14
-    image: thecodingmachine/workadventure-back-base:latest
-    environment:
-      #STARTUP_COMMAND_0: sudo apt-get install -y inotify-tools
-      STARTUP_COMMAND_1: yarn install
-      STARTUP_COMMAND_2: yarn run proto:watch
-    volumes:
-      - ./messages:/usr/src/app
-      - ./back:/usr/src/back
-      - ./front:/usr/src/front
-      - ./pusher:/usr/src/pusher
+  #messages:
+  #  #image: thecodingmachine/nodejs:14
+  #  image: thecodingmachine/workadventure-back-base:latest
+  #  environment:
+  #    #STARTUP_COMMAND_0: sudo apt-get install -y inotify-tools
+  #    STARTUP_COMMAND_1: yarn install
+  #    STARTUP_COMMAND_2: yarn run proto:watch
+  #  volumes:
+  #    - ./messages:/usr/src/app
+  #    - ./back:/usr/src/back
+  #    - ./front:/usr/src/front
+  #    - ./pusher:/usr/src/pusher
+  #  restart: unless-stopped
