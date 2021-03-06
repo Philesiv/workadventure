@@ -30,6 +30,7 @@ services:
 
   front:
     build:
+      context: ./
       dockerfile: front/Dockerfile
     environment:
       DEBUG_MODE: "$DEBUG_MODE"
@@ -63,6 +64,7 @@ services:
 
   pusher:
     build:
+      context: ./
       dockerfile: pusher/Dockerfile
     command: yarn run runprod
     #command: yarn run prod
@@ -94,6 +96,7 @@ services:
 
   maps:
     build:
+      context: ./
       dockerfile: maps/Dockerfile
     environment:
       DEBUG_MODE: "$DEBUG_MODE"
@@ -122,6 +125,7 @@ services:
 
   back:
     build:
+      context: ./
       dockerfile: back/Dockerfile
     command: yarn run runprod
     #command: yarn run profile
