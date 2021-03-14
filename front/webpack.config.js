@@ -39,7 +39,7 @@ module.exports = {
     plugins: [
         new HtmlWebpackPlugin(
             {
-                template: './dist/index.tmpl.html',
+                template: './dist/index.tmpl.html.tmp',
                 minify: {
                     collapseWhitespace: true,
                     keepClosingSlash: true,
@@ -55,8 +55,17 @@ module.exports = {
             Phaser: 'phaser'
         }),
         new webpack.EnvironmentPlugin([
-          'API_URL', 'UPLOADER_URL', 'ADMIN_URL', 'MAPS_URL',
-          'DEBUG_MODE', 'TURN_SERVER', 'TURN_USER', 'TURN_PASSWORD', 'JITSI_URL', 'JITSI_PRIVATE_MODE', 'START_ROOM_URL'
+            'API_URL',
+            'UPLOADER_URL',
+            'ADMIN_URL',
+            'DEBUG_MODE',
+            'STUN_SERVER',
+            'TURN_SERVER',
+            'TURN_USER',
+            'TURN_PASSWORD',
+            'JITSI_URL',
+            'JITSI_PRIVATE_MODE',
+            'START_ROOM_URL'
         ])
     ],
 

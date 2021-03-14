@@ -24,8 +24,12 @@ export interface CenterListener {
 }
 
 export const ON_ACTION_TRIGGER_BUTTON = 'onaction';
+
 export const TRIGGER_WEBSITE_PROPERTIES = 'openWebsiteTrigger';
 export const TRIGGER_JITSI_PROPERTIES = 'jitsiTrigger';
+
+export const WEBSITE_MESSAGE_PROPERTIES = 'openWebsiteTriggerMessage';
+export const JITSI_MESSAGE_PROPERTIES = 'jitsiTriggerMessage';
 
 /**
  * This class is in charge of the video-conference layout.
@@ -188,7 +192,7 @@ class LayoutManager {
         } else {
             HtmlUtils.getElementByIdOrFail<HTMLDivElement>('sidebar').style.display = 'none';
             HtmlUtils.getElementByIdOrFail<HTMLDivElement>('main-section').style.display = 'none';
-            HtmlUtils.getElementByIdOrFail<HTMLDivElement>('chat-mode').style.display = 'flex';
+            HtmlUtils.getElementByIdOrFail<HTMLDivElement>('chat-mode').style.display = 'grid';
         }
 
         for (const div of this.importantDivs.values()) {
