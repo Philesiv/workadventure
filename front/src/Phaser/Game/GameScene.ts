@@ -372,7 +372,7 @@ export class GameScene extends ResizableScene implements CenterListener {
         this.initCamera();
 
         this.animatedTiles.init(this.Map);
-        console.log("Animation!")
+        //console.log("Animation!")
         this.animatedTiles.updateAnimatedTiles();
         this.initCirclesCanvas();
 
@@ -658,6 +658,30 @@ export class GameScene extends ResizableScene implements CenterListener {
                         message = 'Press on SPACE to open the web site';
                     }
                     layoutManager.addActionButton('openWebsite', message.toString(), () => {
+                        openWebsiteFunction();
+                    }, this.userInputManager);
+                }else{
+                    openWebsiteFunction();
+                }
+            }
+        });
+        this.gameMap.onPropertyChange('game', (newValue, oldValue, allProps) => {
+            if (newValue === undefined) {
+                layoutManager.removeActionButton('game', this.userInputManager);
+                coWebsiteManager.closeCoWebsite();
+            }else{
+                const openWebsiteFunction = () => {
+                    coWebsiteManager.loadGame(newValue as string, this.MapUrlFile, allProps.get('openWebsitePolicy') as string | undefined);
+                    layoutManager.removeActionButton('game', this.userInputManager);
+                };
+
+                const openWebsiteTriggerValue = allProps.get(TRIGGER_WEBSITE_PROPERTIES);
+                if(openWebsiteTriggerValue && openWebsiteTriggerValue === ON_ACTION_TRIGGER_BUTTON) {
+                    let message = allProps.get(WEBSITE_MESSAGE_PROPERTIES);
+                    if(message === undefined){
+                        message = 'Press on SPACE to open the web site';
+                    }
+                    layoutManager.addActionButton('game', message.toString(), () => {
                         openWebsiteFunction();
                     }, this.userInputManager);
                 }else{

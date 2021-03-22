@@ -62,6 +62,7 @@ class CoWebsiteManager {
         const onloadPromise = new Promise((resolve) => {
             iframe.onload = () => resolve();
         });
+
         this.cowebsiteDiv.appendChild(iframe);
         const onTimeoutPromise = new Promise((resolve) => {
             setTimeout(() => resolve(), 2000);
@@ -73,7 +74,43 @@ class CoWebsiteManager {
             }, animationTime)
         }).catch(() => this.closeCoWebsite());
     }
+    
+    /**
+     * Just like loadCoWebsite but the focuses the iframe
+     */
+    public loadGame(url: string, base: string, allowPolicy?: string): void {
+        this.load();
+        this.cowebsiteDiv.innerHTML = `<button class="close-btn" id="cowebsite-close">
+                    <img src="resources/logos/close.svg">
+                </button>`;
+        setTimeout(() => {
+            HtmlUtils.getElementByIdOrFail('cowebsite-close').addEventListener('click', () => {
+                this.closeCoWebsite();
+            });
+        }, 100);
 
+        const iframe = document.createElement('iframe');
+        iframe.id = 'cowebsite-iframe';
+        iframe.src = (new URL(url, base)).toString();
+        if (allowPolicy) {
+            iframe.allow = allowPolicy; 
+        }
+        const onloadPromise = new Promise((resolve) => {
+            iframe.onload = () => resolve();
+        });
+
+        this.cowebsiteDiv.appendChild(iframe);
+        const onTimeoutPromise = new Promise((resolve) => {
+            setTimeout(() => resolve(), 2000);
+        });
+        this.currentOperationPromise = this.currentOperationPromise.then(() =>Promise.race([onloadPromise, onTimeoutPromise])).then(() => {
+            this.open();
+            setTimeout(() => {
+                this.fire();
+            }, animationTime)
+            iframe.focus() // just changed this
+        }).catch(() => this.closeCoWebsite());
+    }
     /**
      * Just like loadCoWebsite but the div can be filled by the user.
      */
