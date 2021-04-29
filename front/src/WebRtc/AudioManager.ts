@@ -21,7 +21,7 @@ class AudioManager {
 
     private volume = 1;
     private muted = false;
-    private decreaseWhileTalking = true;
+    private decreaseWhileTalking = false;
     private volumeReduced = false;
     // low pass: 
     private AudioContext = window.AudioContext; // -> for older browsers || window.webkitAudioContext;
